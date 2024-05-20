@@ -1,219 +1,196 @@
-# https://github.com/CristiMCV91/
-"""
-🆃🆈🅿🅸🅽🅶 🆂🅿🅴🅴🅳 🆃🅴🆂🆃
-"""
-import tkinter
-import customtkinter  # Custom module for GUI
+import tkinter as tk
+import customtkinter as ctk
 import random
-from datetime import datetime
 import time
 import threading
 
+# Function to read words from the file
+def read_word_list():
+    try:
+        with open("words.txt", 'r') as file:
+            word_list = file.readlines()
+            word_list = [word.strip() for word in word_list]
+            random.shuffle(word_list)  # Shuffle the list of words
+            return word_list
+    except FileNotFoundError:
+        print("Error: The words.txt file was not found.")
+        return []
 
-
-# Funcție pentru începerea cronometrului
+# Function to start the timer
 def start_timer(event, reset=0):
-
-    typing_textbox.unbind("<Key>")
+    typing_textbox.unbind("<Key>")  # Unbind the key event to avoid multiple bindings
     typing_textbox.configure(state="normal")
-    def run(seconds = 60):
-        global your_score_var, running
+
+    def run(seconds=60):
+        global running
         running = True
-        while (seconds > 0) and (running == True):
+        while seconds > 0 and running:
             time.sleep(1)
             seconds -= 1
-            time_left_var.set(seconds)
+            time_left_var.set(seconds)  # Update the time left variable
         time_left_var.set(0)
-        typing_textbox.configure(state="disabled")
-
-        your_score_var = wpm_var.get()
+        typing_textbox.configure(state="disabled")  # Disable the typing textbox when time is up
+        cpm_var_lbl.configure(fg_color="#87ceeb")  # Change the color of CPM label
+        wpm_var_lbl.configure(fg_color="#87ceeb")  # Change the color of WPM label
+        time_left_lbl.configure(fg_color="#87ceeb")  # Change the color of time left label
 
     countdown_thread = threading.Thread(target=run)
     countdown_thread.start()
 
+# Function to calculate statistics
+def calculate_statistics(match_list):
+    cpm_var.set(len(typing_textbox.get()))  # Set CPM variable to the length of the typed text
+    correct_words = sum(1 for item in match_list if item[2])  # Count correct words
+    wpm_var.set(correct_words)  # Set WPM variable to the count of correct words
 
-def statistic(match_list):
-    cpm_var.set(len(typing_textbox.get()))
-
-    count_true = 0
-    for item in match_list:
-        if item[2] == True:
-            count_true += 1
-    wpm_var.set(count_true)
-
-def readWordList():
-    with open("words.txt", 'r') as file:
-        word_list= file.readlines()
-        word_list = [word.strip() for word in word_list]
-        random.shuffle(word_list)
-        print(word_list)
-        return word_list
-
-
-def restartButtonEvent():
+# Function to restart the test
+def restart_test():
     global shuffled_text, running
-    shuffled_text = ' '.join(readWordList())
+    shuffled_text = ' '.join(read_word_list())  # Read and shuffle the word list
     words_textbox.configure(state='normal')
-    words_textbox.delete("0.0", tkinter.END)
-    words_textbox.insert("0.0", shuffled_text)
+    words_textbox.delete("0.0", tk.END)  # Clear the words textbox
+    words_textbox.insert("0.0", shuffled_text)  # Insert the new shuffled text
     words_textbox.configure(state='disabled')
-    typing_textbox.delete(0, tkinter.END)
-    typing_textbox.bind("<Key>", start_timer)
-    running = False
-    time_left_var.set(60)
-    cpm_var.set(0)
-    wpm_var.set(0)
     typing_textbox.configure(state="normal")
+    typing_textbox.delete(0, tk.END)  # Clear the typing textbox
+    typing_textbox.bind("<Key>", start_timer)  # Bind the key event to start the timer
+    running = False
+    time_left_var.set(60)  # Reset the timer
+    cpm_var.set(0)  # Reset CPM variable
+    wpm_var.set(0)  # Reset WPM variable
+    typing_textbox.configure(state="normal")
+    cpm_var_lbl.configure(fg_color="#FFFFFF")  # Reset CPM label color
+    wpm_var_lbl.configure(fg_color="#FFFFFF")  # Reset WPM label color
+    time_left_lbl.configure(fg_color="#FFFFFF")  # Reset time left label color
 
-
-def coloredWords(match_list):
-    word_text_var = shuffled_text
-
-    list1 = word_text_var.split()
+# Function to update the colors of the words
+def update_word_colors(match_list):
+    word_text = shuffled_text
+    words = word_text.split()
 
     words_textbox.configure(state='normal')
-    words_textbox.tag_delete("color")
+    words_textbox.tag_delete("color")  # Delete previous color tags
 
-    for i in range (len(match_list), len(list1)):
-        words_textbox.tag_remove(list1[i], "1.0", "end")
+    for i in range(len(match_list), len(words)):
+        words_textbox.tag_remove(words[i], "1.0", "end")  # Remove tags from unmatched words
 
-    for i in range (0, len(match_list)-1):
-        words_textbox.tag_config(list1[i],background="")
+    for i in range(len(match_list)):
+        words_textbox.tag_config(words[i], background="")  # Reset background color
 
-    words_textbox.tag_config(list1[len(match_list)], background="yellow")
-    print(len(match_list))
-    print(list1[len(match_list)])
+    current_word_index = len(match_list)
+    if current_word_index < len(words):
+        words_textbox.tag_config(words[current_word_index], background="yellow")  # Highlight current word
 
     for word in match_list:
-        start_index = word_text_var.index(word[0])
+        start_index = word_text.index(word[0])
         end_index = start_index + len(word[0])
+        words_textbox.tag_add(word[0], f"1.{start_index}", f"1.{end_index}")
 
-        words_textbox.tag_add(word[0], f"1.{start_index}",f"1.{end_index}")
+        if word[2]:
+            words_textbox.tag_config(word[0], foreground="green")  # Correct words in green
+        else:
+            words_textbox.tag_config(word[0], foreground="red")  # Incorrect words in red
 
-        for word in match_list[:-1]:
-            start_index = word_text_var.index(word[0])
-            end_index = start_index + len(word[0])
+    # Auto-scroll to the current word
+    if match_list:
+        words_textbox.see(f"1.{word_text.index(words[current_word_index])}")
 
-            words_textbox.tag_add(word[0], f"1.{start_index}", f"1.{end_index}")
-
-            if word[2] == True:
-                words_textbox.tag_config(word[0], foreground="green")
-            elif (word[2] == False):
-                words_textbox.tag_config(word[0], foreground="red")
-
-
-def matchLists(event):
-    typed_text_var = typing_textbox.get()
-    word_text_var = shuffled_text
-
-
-    list1 = word_text_var.split()
-    list2 = typed_text_var.split()
+# Function to match typed words with displayed words
+def match_lists(event):
+    typed_text = typing_textbox.get()
+    words = shuffled_text.split()
+    typed_words = typed_text.split()
     match_list = []
 
     try:
-        for i in range(0,len(list2)):
-            if list1[i] == list2[i]:
-                match_list.append((list1[i], list2[i], True))
-            elif not list1[i] == list2[i]:
-                match_list.append((list1[i], list2[i], False))
-    except:
+        for i in range(len(typed_words)):
+            match_list.append((words[i], typed_words[i], words[i] == typed_words[i]))  # Create match list
+    except IndexError:
         pass
 
-    coloredWords(match_list)
-    statistic(match_list)
-
-
+    update_word_colors(match_list)
+    calculate_statistics(match_list)
 
 # System Settings
-customtkinter.set_appearance_mode("light")
-customtkinter.set_default_color_theme("blue")
+ctk.set_appearance_mode("light")  # Set appearance mode to light
+ctk.set_default_color_theme("blue")  # Set default color theme to blue
 
 # App Typing Speed Test
-app = customtkinter.CTk()
-app.geometry("720x720")
-app.title("Typing Speed Test")
+app = ctk.CTk()
+app.geometry("720x720")  # Set app window size
+app.title("Typing Speed Test")  # Set app title
 
-# Create 3 frames for the app content
-first_frame = customtkinter.CTkFrame(app, width=720, height=120, fg_color="transparent", border_color="#FF0000", border_width=0)
+# Create frames
+first_frame = ctk.CTkFrame(app, width=720, height=120, fg_color="transparent")
 first_frame.grid(column=0, row=0, padx=10, pady=10, sticky="n")
-second_frame = customtkinter.CTkFrame(app, width=720, height=300, fg_color="#bebebe", border_color="#FF0000", border_width=0)
+second_frame = ctk.CTkFrame(app, width=720, height=300, fg_color="#bebebe")
 second_frame.grid(column=0, row=1, padx=10, pady=10, sticky="n")
-third_frame = customtkinter.CTkFrame(app, width=720, height=300, fg_color="transparent", border_color="#FF0000", border_width=0)
+third_frame = ctk.CTkFrame(app, width=720, height=300, fg_color="transparent")
 third_frame.grid(column=0, row=2, padx=10, pady=10, sticky="n")
 
-# Add UI Elements
-
-# Logo Typing Speed Test
-logo_lbl = customtkinter.CTkLabel(first_frame, text="🆃🆈🅿🅸🅽🅶 🆂🅿🅴🅴🅳 🆃🅴🆂🆃", font=("Arial", 56))
+# Logo
+logo_lbl = ctk.CTkLabel(first_frame, text="🆃🆈🅿🅸🅽🅶 🆂🅿🅴🅴🅳 🆃🅴🆂🆃", font=("Arial", 56))
 logo_lbl.grid(row=0, column=0, padx=10, pady=10, sticky="n")
 
-# Add intro text
+# Intro text
 intro_text = """
 How fast are your fingers? Do the one-minute typing test to find out! 
 Press the space bar after each word. At the end, you'll get your typing speed in CPM and WPM.
 Good luck!
 """
-intro_lbl = customtkinter.CTkLabel(first_frame, text=intro_text)
+intro_lbl = ctk.CTkLabel(first_frame, text=intro_text)
 intro_lbl.grid(row=1, column=0, padx=10, pady=10, sticky="n")
 
-# # Score label
-# max_score_var = 0
-# max_score_lbl = customtkinter.CTkLabel(first_frame, text="Max Score: "+str(max_score_var))
-# max_score_lbl.grid(row=2, column=0, padx=0, pady=10, sticky="w")
-#
-# your_score_var = 0
-# your_score_lbl = customtkinter.CTkLabel(first_frame, text=f"Your Score: "+str(your_score_var))
-# your_score_lbl.grid(row=2, column=0, padx=0, pady=10, sticky="n")
-
-# Corrected Case Per Minute (CPM)
-cpm_lbl = customtkinter.CTkLabel(second_frame, text="Total CPM:")
+# Corrected Characters Per Minute (CPM)
+cpm_lbl = ctk.CTkLabel(second_frame, text="Total CPM:")
 cpm_lbl.grid(row=0, column=0, padx=10, pady=10, sticky="n")
-
-cpm_var = tkinter.StringVar()
+cpm_var = tk.StringVar()
 cpm_var.set(0)
-cpm_var_lbl = customtkinter.CTkEntry(second_frame,  textvariable=cpm_var, font=(("Arial"), 15, "bold"), width=40, state="disabled")
+cpm_var_lbl = ctk.CTkEntry(second_frame, textvariable=cpm_var, font=("Arial", 15, "bold"), width=40, state="disabled")
 cpm_var_lbl.grid(row=0, column=1, padx=10, pady=10, sticky="n")
 
-# Word Per Minute (WPM)
-wpm_lbl = customtkinter.CTkLabel(second_frame, text="Correct WPM:")
+# Words Per Minute (WPM)
+wpm_lbl = ctk.CTkLabel(second_frame, text="Correct WPM:")
 wpm_lbl.grid(row=0, column=2, padx=10, pady=10, sticky="n")
-
-wpm_var = tkinter.StringVar()
+wpm_var = tk.StringVar()
 wpm_var.set(0)
-wpm_var_lbl = customtkinter.CTkEntry(second_frame,  textvariable=wpm_var, font=(("Arial"), 15, "bold"), width=40, state="disabled")
+wpm_var_lbl = ctk.CTkEntry(second_frame, textvariable=wpm_var, font=("Arial", 15, "bold"), width=40, state="disabled")
 wpm_var_lbl.grid(row=0, column=3, padx=10, pady=10, sticky="n")
 
 # Time left
-time_lbl = customtkinter.CTkLabel(second_frame, text="Time left:")
+time_lbl = ctk.CTkLabel(second_frame, text="Time left:")
 time_lbl.grid(row=0, column=4, padx=10, pady=10, sticky="n")
-
-time_left_var = tkinter.StringVar()
+time_left_var = tk.StringVar()
 time_left_var.set(60)
-time_left_lbl = customtkinter.CTkEntry(second_frame,  textvariable=time_left_var, font=(("Arial"), 15, "bold"), width=40, state="normal")
+time_left_lbl = ctk.CTkEntry(second_frame, textvariable=time_left_var, font=("Arial", 15, "bold"), width=40, state="normal")
 time_left_lbl.grid(row=0, column=5, padx=10, pady=10, sticky="n")
 
 # Restart button
-restart_btn = customtkinter.CTkButton(second_frame, text="Restart", command=restartButtonEvent)
+restart_btn = ctk.CTkButton(second_frame, text="Restart", command=restart_test)
 restart_btn.grid(row=0, column=6, padx=10, pady=10, sticky="n")
 
-# Scrollable frame words box
-shuffled_text = ' '.join(readWordList())
-words_textbox = customtkinter.CTkTextbox(third_frame, width=500, height=200, font=(("Arial"), 40), wrap='word')
+# Words textbox
+shuffled_text = ' '.join(read_word_list())  # Read and shuffle the word list
+words_textbox = ctk.CTkTextbox(third_frame, width=500, height=200, font=("Arial", 40), wrap='word')
 words_textbox.insert("0.0", shuffled_text)
-words_textbox.configure(state='normal')
+words_textbox.configure(state='disabled')
 words_textbox.grid(row=0, column=0, padx=10, pady=10, sticky="n")
 
-# Text box for typing
-typing_textbox = customtkinter.CTkEntry(third_frame, width=500, height=50, font=(("Arial"), 40), justify="center")
+# Typing textbox
+typing_textbox = ctk.CTkEntry(third_frame, width=500, height=50, font=("Arial", 40), justify="center")
 typing_textbox.grid(row=1, column=0, padx=10, pady=20, sticky="s")
-typing_textbox.bind("<KeyRelease>", matchLists)
-typing_textbox.bind("<Key>", start_timer)
-
+typing_textbox.bind("<KeyRelease>", match_lists)  # Bind key release event to match lists function
+typing_textbox.bind("<Key>", start_timer)  # Bind key event to start timer
 typing_textbox.focus()
-matchLists("Start")
 
+explanation_text = """
+The countdown will start when you type the first letter.
+Press RESTART button to reload a new typing sesion.
+"""
+explanation_text_lbl = ctk.CTkLabel(third_frame, text=explanation_text)
+explanation_text_lbl.grid(row=2, column=0, padx=10, pady=10, sticky="n")
 
-# Run app
+match_lists("start app")  # Initial call to match lists function
+
+# Run the app
 app.mainloop()
-
