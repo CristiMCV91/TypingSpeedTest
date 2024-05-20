@@ -77,7 +77,7 @@ def update_word_colors(match_list):
     for i in range (0, len(match_list)-1):
         words_textbox.tag_config(words[i],background="")  # Reset background color
 
-    words_textbox.tag_config(words[len(match_list)], background="yellow", foreground="black")  # Highlight current word
+    words_textbox.tag_config(words[len(match_list)], background="yellow")  # Highlight current word
 
     current_word_index = len(match_list)
 
@@ -185,7 +185,7 @@ typing_textbox.focus()
 
 explanation_text = """
 The countdown will start when you type the first letter.
-Press RESTART button to reload a new typing sesion.
+Press RESTART button to reload a new typing session.
 """
 explanation_text_lbl = ctk.CTkLabel(third_frame, text=explanation_text)
 explanation_text_lbl.grid(row=2, column=0, padx=10, pady=10, sticky="n")
