@@ -74,12 +74,12 @@ def update_word_colors(match_list):
     for i in range(len(match_list), len(words)):
         words_textbox.tag_remove(words[i], "1.0", "end")  # Remove tags from unmatched words
 
-    for i in range(len(match_list)):
-        words_textbox.tag_config(words[i], background="")  # Reset background color
+    for i in range (0, len(match_list)-1):
+        words_textbox.tag_config(words[i],background="")  # Reset background color
+
+    words_textbox.tag_config(words[len(match_list)], background="yellow", foreground="black")  # Highlight current word
 
     current_word_index = len(match_list)
-    if current_word_index < len(words):
-        words_textbox.tag_config(words[current_word_index], background="yellow")  # Highlight current word
 
     for word in match_list:
         start_index = word_text.index(word[0])
